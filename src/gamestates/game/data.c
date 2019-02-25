@@ -65,7 +65,7 @@ void dataForcePlayerState(tPlayer *pPlayer, tVehicleState *pState) {
 		pPlayer->sVehicle.uwX = fix16_to_int(pState->fX);
 		pPlayer->sVehicle.uwY = fix16_to_int(pState->fY);
 		pPlayer->sVehicle.ubBodyAngle = pState->ubBodyAngle;
-		pPlayer->sVehicle.ubTurretAngle = pState->ubTurretAngle;
+		pPlayer->sVehicle.ubAuxAngle = pState->ubAuxAngle;
 		// TODO: destination angle
 		// TODO: delta x,y
 		if(pPlayer->ubCurrentVehicleType != pState->ubVehicleType) {

@@ -111,7 +111,7 @@ static void vehicleTypeGenerateRotatedCollisions(tCollisionPts *pFrameCollisions
 	for(FUBYTE fubFrame = VEHICLE_BODY_ANGLE_COUNT; fubFrame--;) {
 		FUBYTE fubAngle = fubFrame << 1;
 		tCollisionPts *pNewCollisions = &pFrameCollisions[fubFrame];
-		for(FUBYTE fubPoint = 0; fubPoint != 8; ++fubPoint) {
+		for(FUBYTE fubPoint = 0; fubPoint < 8; ++fubPoint) {
 			pNewCollisions->pPts[fubPoint].bX = fix16_to_int(fix16_sub(
 				pFrameCollisions[0].pPts[fubPoint].bX * ccos(fubAngle),
 				pFrameCollisions[0].pPts[fubPoint].bY * csin(fubAngle)
@@ -164,11 +164,11 @@ void vehicleTypesCreate(void) {
 	pType->ubMaxFuel = 100;
 	pType->ubMaxLife = 100;
 
-	precalcIncreaseProgress(15, "Generating tank frames");
+	precalcIncreaseProgress(12, "Generating tank frames");
 	vehicleTypeFramesCreate(pType, "tank", 1);
 
 	// Tank collision coords
-	precalcIncreaseProgress(15, "Calculating tank collision coords");
+	precalcIncreaseProgress(12, "Calculating tank collision coords");
 	pType->pCollisionPts[0].pPts[0].bX = 6;  pType->pCollisionPts[0].pPts[0].bY = 8;
 	pType->pCollisionPts[0].pPts[1].bX = 17; pType->pCollisionPts[0].pPts[1].bY = 8;
 	pType->pCollisionPts[0].pPts[2].bX = 29; pType->pCollisionPts[0].pPts[2].bY = 8;
@@ -177,7 +177,7 @@ void vehicleTypesCreate(void) {
 	pType->pCollisionPts[0].pPts[5].bX = 6;  pType->pCollisionPts[0].pPts[5].bY = 24;
 	pType->pCollisionPts[0].pPts[6].bX = 17; pType->pCollisionPts[0].pPts[6].bY = 24;
 	pType->pCollisionPts[0].pPts[7].bX = 29; pType->pCollisionPts[0].pPts[7].bY = 24;
-	for(FUBYTE i = 0; i != 8; ++i) {
+	for(FUBYTE i = 0; i < 8; ++i) {
 		pType->pCollisionPts[0].pPts[i].bX -= VEHICLE_BODY_WIDTH/2;
 		pType->pCollisionPts[0].pPts[i].bY -= VEHICLE_BODY_HEIGHT/2;
 	}
@@ -195,11 +195,11 @@ void vehicleTypesCreate(void) {
 	pType->ubMaxFuel = 100;
 	pType->ubMaxLife = 1;
 
-	precalcIncreaseProgress(15, "Generating jeep frames");
+	precalcIncreaseProgress(12, "Generating jeep frames");
 	vehicleTypeFramesCreate(pType, "jeep", 0);
 
 	// Jeep collision coords
-	precalcIncreaseProgress(15, "Calculating jeep collision coords");
+	precalcIncreaseProgress(12, "Calculating jeep collision coords");
 	pType->pCollisionPts[0].pPts[0].bX = 8;  pType->pCollisionPts[0].pPts[0].bY = 11;
 	pType->pCollisionPts[0].pPts[1].bX = 16; pType->pCollisionPts[0].pPts[1].bY = 11;
 	pType->pCollisionPts[0].pPts[2].bX = 25; pType->pCollisionPts[0].pPts[2].bY = 11;
@@ -208,11 +208,25 @@ void vehicleTypesCreate(void) {
 	pType->pCollisionPts[0].pPts[5].bX = 8;  pType->pCollisionPts[0].pPts[5].bY = 20;
 	pType->pCollisionPts[0].pPts[6].bX = 16; pType->pCollisionPts[0].pPts[6].bY = 20;
 	pType->pCollisionPts[0].pPts[7].bX = 25; pType->pCollisionPts[0].pPts[7].bY = 20;
-	for(FUBYTE i = 0; i != 8; ++i) {
+	for(FUBYTE i = 0; i < 8; ++i) {
 		pType->pCollisionPts[0].pPts[i].bX -= VEHICLE_BODY_WIDTH/2;
 		pType->pCollisionPts[0].pPts[i].bY -= VEHICLE_BODY_HEIGHT/2;
 	}
 	vehicleTypeGenerateRotatedCollisions(pType->pCollisionPts);
+
+	// Chopper
+	pType = &g_pVehicleTypes[VEHICLE_TYPE_CHOPPER];
+	pType->ubFwdSpeed = 1;
+	pType->ubBwSpeed = 1;
+	pType->ubRotSpeed = 1;
+	pType->ubRotSpeedDiv = 4;
+	pType->ubMaxBaseAmmo = 100;
+	pType->ubMaxSuperAmmo = 0;
+	pType->ubMaxFuel = 100;
+	pType->ubMaxLife = 100;
+
+	precalcIncreaseProgress(12, "Generating chopper frames");
+	vehicleTypeFramesCreate(pType, "chopper", 1);
 
 	logBlockEnd("vehicleTypesCreate");
 }
@@ -235,8 +249,8 @@ void vehicleTypesDestroy(void) {
 	// Free bob sources
 	vehicleTypeUnloadFrameData(&g_pVehicleTypes[VEHICLE_TYPE_TANK]);
 	vehicleTypeUnloadFrameData(&g_pVehicleTypes[VEHICLE_TYPE_JEEP]);
+	vehicleTypeUnloadFrameData(&g_pVehicleTypes[VEHICLE_TYPE_CHOPPER]);
 	// TODO ASV
-	// TODO Chopper
 
 	logBlockEnd("vehicleTypesDestroy()");
 }

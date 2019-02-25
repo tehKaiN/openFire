@@ -89,7 +89,7 @@ tProjectile *projectileCreate(
 	// Initial projectile position & angle
 	if(ubOwnerType == PROJECTILE_OWNER_TYPE_VEHICLE) {
 		if(uOwner.pVehicle->pType == &g_pVehicleTypes[VEHICLE_TYPE_TANK]) {
-			pProjectile->ubAngle = uOwner.pVehicle->ubTurretAngle;
+			pProjectile->ubAngle = uOwner.pVehicle->ubAuxAngle;
 		}
 		else {
 			pProjectile->ubAngle = uOwner.pVehicle->ubBodyAngle;

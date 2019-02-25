@@ -30,7 +30,7 @@ typedef struct _tVehicleState {
 	fix16_t fX;          ///< Vehicle X-position relative to center of gfx.
 	fix16_t fY;          ///< Ditto, vehicle Y.
 	UBYTE ubBodyAngle;   ///< Measured clockwise, +90deg is to bottom.
-	UBYTE ubTurretAngle; ///< NOT relative to body angle, measured as above.
+	UBYTE ubAuxAngle;    ///< NOT relative to body angle, measured as above.
 	// Aligned with ubDestAngle
 	UBYTE ubVehicleType;  ///< Could be combined with ubVehicleState per nibble
 	UBYTE ubPlayerState;  ///< DEAD, SURFACING, etc.

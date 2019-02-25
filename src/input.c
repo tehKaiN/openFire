@@ -1,6 +1,6 @@
 #include "input.h"
 #include <ace/managers/mouse.h>
-#include <ace/managers/joy.h>
+#include <ace/managers/key.h>
 
 /* Globals */
 

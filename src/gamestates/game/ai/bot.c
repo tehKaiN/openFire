@@ -172,7 +172,7 @@ static tAiNode *botFindNewTarget(tBot *pBot, tAiNode *pDestToEvade) {
 static tTurret *botTargetNearbyTurret(tBot *pBot, UBYTE ubEnemyTeam) {
 	UWORD uwBotTileX = pBot->pPlayer->sVehicle.uwX >> MAP_TILE_SIZE;
 	UWORD uwBotTileY = pBot->pPlayer->sVehicle.uwY >> MAP_TILE_SIZE;
-	UBYTE ubOctant = ((pBot->pPlayer->sVehicle.ubTurretAngle+8) & ANGLE_LAST) >> 4;
+	UBYTE ubOctant = ((pBot->pPlayer->sVehicle.ubAuxAngle + 8) & ANGLE_LAST) >> 4;
 
 	tBCoordYX *pTargetingOrder = s_pTargetingOrders[ubOctant];
 	for(UBYTE i = 0; i != BOT_TARGETING_FLAT_SIZE; ++i) {

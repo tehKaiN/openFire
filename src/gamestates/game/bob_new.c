@@ -6,6 +6,7 @@
 #include <ace/managers/memory.h>
 #include <ace/managers/system.h>
 #include <ace/utils/custom.h>
+#include <gamestates/game/game.h>
 
 // Undraw stack must be accessible during adding new bobs, so the most safe
 // approach is to have two lists - undraw list gets populated after draw
@@ -67,9 +68,11 @@ void bobNewManagerDestroy(void) {
 }
 
 void bobNewPush(tBobNew *pBob) {
-	tBobQueue *pQueue = &s_pQueues[s_ubBufferCurr];
-	pQueue->pBobs[s_ubBobsPushed] = pBob;
-	++s_ubBobsPushed;
+	if(steerRequestIsLast()) {
+		tBobQueue *pQueue = &s_pQueues[s_ubBufferCurr];
+		pQueue->pBobs[s_ubBobsPushed] = pBob;
+		++s_ubBobsPushed;
+	}
 	if(blitIsIdle()) {
 		bobNewProcessNext();
 	}
@@ -201,6 +204,9 @@ UBYTE bobNewProcessNext(void) {
 }
 
 void bobNewBegin(void) {
+	if(!steerRequestIsFirst()) {
+		return;
+	}
 	tBobQueue *pQueue = &s_pQueues[s_ubBufferCurr];
 
 	// Prepare for undraw
@@ -253,7 +259,9 @@ void bobNewBegin(void) {
 }
 
 void bobNewPushingDone(void) {
-	s_isPushingDone = 1;
+	if(steerRequestIsLast()) {
+		s_isPushingDone = 1;
+	}
 }
 
 void bobNewEnd(void) {

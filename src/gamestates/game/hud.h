@@ -8,11 +8,12 @@
 #define HUD_STATE_SELECTING 0
 #define HUD_STATE_DRIVING 1
 
-void hudChangeState(FUBYTE fubState);
+void hudChangeState(UBYTE fubState);
 
 void hudCreate(tFont *pFont);
 void hudDestroy(void);
 void hudUpdate(void);
+void hudToggleFps(void);
 
 extern tSimpleBufferManager *g_pHudBfr;
 

@@ -12,16 +12,20 @@ As the game is still under development, game performance will vary.
 * Mouse and keyboard
 
 ## How to play
+
 After starting game, you may choose your team and vehicle. The goal of the game is to conquer more bases than enemy team and maintain this state until enemy team runs out of respawn points.
 
 ## Controls
+
 * Movement: <kbd>W</kbd>, <kbd>S</kbd>, <kbd>A</kbd>, <kbd>D</kbd>
 * Fire, hiding in bunker: <kbd>LMB</kbd>
+* Show FPS: <kbd>F1</kbd>
 * Exit: <kbd>ESC</kbd>
 
 ## Authors
 
-This game has been made as entry for [RetroKomp](http://retrokomp.org) Gamedev Compo 2017. Original authors are:
+This game has been made as entry for
+[RetroKomp](http://retrokomp.org) Gamedev Compo 2017. Original authors are:
 
 * KaiN - code
 * Selur - gfx

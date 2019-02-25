@@ -2,7 +2,6 @@
 #include <ace/generic/main.h>
 #include <ace/managers/game.h>
 
-#include "config.h"
 #include "input.h"
 #include "gamestates/precalc/precalc.h"
 

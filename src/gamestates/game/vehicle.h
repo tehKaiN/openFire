@@ -7,20 +7,10 @@
 #include "gamestates/game/gamemath.h"
 #include "gamestates/game/projectile.h"
 #include "gamestates/game/bob_new.h"
+#include "gamestates/game/steer_request.h"
 
 /// Vehicle-specific constants
 #define VEHICLE_TANK_COOLDOWN PROJECTILE_FRAME_LIFE
-
-typedef struct _tSteerRequest {
-	UBYTE ubForward;
-	UBYTE ubBackward;
-	UBYTE ubLeft;
-	UBYTE ubRight;
-	UBYTE ubAction1;
-	UBYTE ubAction2;
-	UBYTE ubAction3;
-	UBYTE ubDestAngle;
-} tSteerRequest;
 
 typedef struct _tVehicle {
 	tVehicleType *pType; ///< Ptr to vehicle type definition
@@ -31,20 +21,21 @@ typedef struct _tVehicle {
 	UWORD uwX;           ///< Same as fX, but converted to UWORD. Read-only.
 	UWORD uwY;           ///< Ditto.
 	UBYTE ubBodyAngle;   ///< Measured clockwise, +90deg is to bottom.
-	UBYTE ubTurretAngle; ///< NOT relative to body angle, measured as above.
+	UBYTE ubAuxAngle;    ///< NOT relative to body angle, measured as above.
 	UBYTE ubBaseAmmo;
 	UBYTE ubSuperAmmo;
 	BYTE  bRotDiv;
 	UBYTE ubFuel;
 	UBYTE ubLife;
 	UBYTE ubCooldown; ///< Cooldown timer after fire
+	fix16_t fSpeed;
+	fix16_t fSpeed2;
 } tVehicle;
 
 void vehicleInit(tVehicle *pVehicle, UBYTE ubVehicleType, UBYTE ubSpawnIdx);
 
-void vehicleDrawFrame(UWORD uwX, UWORD uwY, UBYTE ubDAngle);
-
 void vehicleSteerTank(tVehicle *pVehicle, const tSteerRequest *pSteerRequest);
 void vehicleSteerJeep(tVehicle *pVehicle, const tSteerRequest *pSteerRequest);
+void vehicleSteerChopper(tVehicle *pVehicle, const tSteerRequest *pSteerRequest);
 
 #endif

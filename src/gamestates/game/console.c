@@ -63,9 +63,12 @@ void consoleUpdate(void) {
 		return;
 	}
 
-	if(fontFillTextBitMap(
+	if(fontTextFitsInTextBitmap(
 		s_pConsoleFont, s_pChatLineBfr, s_sLog.pLog[s_uwToDraw].szMessage
 	)) {
+		fontFillTextBitMap(
+			s_pConsoleFont, s_pChatLineBfr, s_sLog.pLog[s_uwToDraw].szMessage
+		);
 		// Move remaining messages up
 		blitCopyAligned(
 			g_pHudBfr->pBack, 112, 9,

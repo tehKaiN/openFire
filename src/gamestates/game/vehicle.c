@@ -18,13 +18,15 @@ void vehicleInit(tVehicle *pVehicle, UBYTE ubVehicleType, UBYTE ubSpawnIdx) {
 	pVehicle->uwX = fix16_to_int(pVehicle->fX);
 	pVehicle->uwY = fix16_to_int(pVehicle->fY);
 	pVehicle->ubBodyAngle = ANGLE_90;
-	pVehicle->ubTurretAngle = ANGLE_90;
+	pVehicle->ubAuxAngle = ANGLE_90;
 	pVehicle->ubBaseAmmo = pVehicle->pType->ubMaxBaseAmmo;
 	pVehicle->ubSuperAmmo = pVehicle->pType->ubMaxSuperAmmo;
 	pVehicle->ubFuel = pVehicle->pType->ubMaxFuel;
 	pVehicle->ubLife = pVehicle->pType->ubMaxLife;
 	pVehicle->bRotDiv = 0;
 	pVehicle->ubCooldown = 0;
+	pVehicle->fSpeed = 0;
+	pVehicle->fSpeed2 = 0;
 
 	UBYTE ubTeam = playerGetByVehicle(pVehicle)->ubTeam;
 	pVehicle->sBob.pBitmap = g_pVehicleTypes[ubVehicleType].pMainFrames[ubTeam];
@@ -137,21 +139,42 @@ void vehicleSteerTank(
 	UBYTE ubNewTurretAngle;
 	fix16_t fNewPosX, fNewPosY;
 
+	if(pSteerRequest->ubForward) {
+		fix16_t fDestSpeed = fix16_from_int(pVehicle->pType->ubFwdSpeed);
+		if(pVehicle->fSpeed < fDestSpeed) {
+			pVehicle->fSpeed += fix16_one/16;
+		}
+		else {
+			pVehicle->fSpeed = fDestSpeed;
+		}
+	}
+	else if(pSteerRequest->ubBackward) {
+		fix16_t fDestSpeed = fix16_from_int(-pVehicle->pType->ubBwSpeed);
+		if(pVehicle->fSpeed > fDestSpeed) {
+			pVehicle->fSpeed -= fix16_one/16;
+		}
+		else {
+			pVehicle->fSpeed = fDestSpeed;
+		}
+	}
+
+	// Friction
+	if(pVehicle->fSpeed > 0) {
+		pVehicle->fSpeed -= fix16_one/20;
+	}
+	else if(pVehicle->fSpeed < 0) {
+		pVehicle->fSpeed += fix16_one/20;
+	}
+
 	// Move forward/backward
 	fNewPosX = pVehicle->fX;
 	fNewPosY = pVehicle->fY;
-	if(pSteerRequest->ubForward) {
-		fNewPosX += ccos(pVehicle->ubBodyAngle) * pVehicle->pType->ubFwdSpeed;
-		fNewPosY += csin(pVehicle->ubBodyAngle) * pVehicle->pType->ubFwdSpeed;
-	}
-	else if(pSteerRequest->ubBackward) {
-		fNewPosX -= ccos(pVehicle->ubBodyAngle) * pVehicle->pType->ubBwSpeed;
-		fNewPosY -= csin(pVehicle->ubBodyAngle) * pVehicle->pType->ubBwSpeed;
-	}
+	fNewPosX += fix16_mul(ccos(pVehicle->ubBodyAngle), pVehicle->fSpeed);
+	fNewPosY += fix16_mul(csin(pVehicle->ubBodyAngle), pVehicle->fSpeed);
 
 	// Body rotation: left/right
 	ubNewAngle = pVehicle->ubBodyAngle;
-	ubNewTurretAngle = pVehicle->ubTurretAngle;
+	ubNewTurretAngle = pVehicle->ubAuxAngle;
 	if(pSteerRequest->ubLeft) {
 		if(pVehicle->bRotDiv > -pVehicle->pType->ubRotSpeedDiv) {
 			--pVehicle->bRotDiv;
@@ -208,20 +231,126 @@ void vehicleSteerTank(
 		pVehicle->sBob.sPos.sUwCoord.uwY = pVehicle->uwY - VEHICLE_BODY_HEIGHT/2;
 		// Angle frame
 		pVehicle->ubBodyAngle = ubNewAngle;
-		pVehicle->ubTurretAngle = ubNewTurretAngle;
+		pVehicle->ubAuxAngle = ubNewTurretAngle;
 		bobNewSetBitMapOffset(
 			&pVehicle->sBob, angleToFrame(ubNewAngle) * VEHICLE_BODY_HEIGHT
 		);
 	}
 
-	pVehicle->ubTurretAngle += ANGLE_360 + getDeltaAngleDirection(
-		pVehicle->ubTurretAngle, pSteerRequest->ubDestAngle, 1
+	pVehicle->ubAuxAngle += ANGLE_360 + getDeltaAngleDirection(
+		pVehicle->ubAuxAngle, pSteerRequest->ubDestAngle, 1
 	);
-	if(pVehicle->ubTurretAngle >= ANGLE_360) {
-		pVehicle->ubTurretAngle -= ANGLE_360;
+	if(pVehicle->ubAuxAngle >= ANGLE_360) {
+		pVehicle->ubAuxAngle -= ANGLE_360;
 	}
 	bobNewSetBitMapOffset(
-		&pVehicle->sAuxBob, angleToFrame(pVehicle->ubTurretAngle) * VEHICLE_BODY_HEIGHT
+		&pVehicle->sAuxBob, angleToFrame(pVehicle->ubAuxAngle) * VEHICLE_BODY_HEIGHT
+	);
+	pVehicle->sAuxBob.sPos.ulYX = pVehicle->sBob.sPos.ulYX;
+
+	// Fire straight
+	if(pVehicle->ubCooldown) {
+		--pVehicle->ubCooldown;
+	}
+	else if(pSteerRequest->ubAction1 && pVehicle->ubBaseAmmo) {
+		tProjectileOwner uOwner;
+		uOwner.pVehicle = pVehicle;
+		projectileCreate(PROJECTILE_OWNER_TYPE_VEHICLE, uOwner, PROJECTILE_TYPE_BULLET);
+		pVehicle->ubCooldown = VEHICLE_TANK_COOLDOWN;
+		--pVehicle->ubBaseAmmo;
+	}
+}
+
+void vehicleSteerChopper(
+	tVehicle *pVehicle, const tSteerRequest *pSteerRequest
+) {
+
+	if(pSteerRequest->ubForward) {
+		fix16_t fDestSpeed = fix16_from_int(pVehicle->pType->ubFwdSpeed);
+		if(pVehicle->fSpeed < fDestSpeed) {
+			pVehicle->fSpeed += fix16_one/24;
+		}
+		else {
+			pVehicle->fSpeed = fDestSpeed;
+		}
+	}
+	else if(pSteerRequest->ubBackward) {
+		fix16_t fDestSpeed = fix16_from_int(-pVehicle->pType->ubBwSpeed);
+		if(pVehicle->fSpeed > fDestSpeed) {
+			pVehicle->fSpeed -= fix16_one/24;
+		}
+		else {
+			pVehicle->fSpeed = fDestSpeed;
+		}
+	}
+	if(pSteerRequest->ubRight) {
+		fix16_t fDestSpeed = fix16_from_int(pVehicle->pType->ubFwdSpeed);
+		if(pVehicle->fSpeed2 < fDestSpeed) {
+			pVehicle->fSpeed2 += fix16_one/24;
+		}
+		else {
+			pVehicle->fSpeed2 = fDestSpeed;
+		}
+	}
+	else if(pSteerRequest->ubLeft) {
+		fix16_t fDestSpeed = fix16_from_int(-pVehicle->pType->ubBwSpeed);
+		if(pVehicle->fSpeed2 > fDestSpeed) {
+			pVehicle->fSpeed2 -= fix16_one/24;
+		}
+		else {
+			pVehicle->fSpeed2 = fDestSpeed;
+		}
+	}
+
+	// Friction
+	if(pVehicle->fSpeed > 0) {
+		pVehicle->fSpeed -= fix16_one/40;
+	}
+	else if(pVehicle->fSpeed < 0) {
+		pVehicle->fSpeed += fix16_one/40;
+	}
+	if(pVehicle->fSpeed2 > 0) {
+		pVehicle->fSpeed2 -= fix16_one/40;
+	}
+	else if(pVehicle->fSpeed2 < 0) {
+		pVehicle->fSpeed2 += fix16_one/40;
+	}
+
+	// Move forward/backward
+	fix16_t fNewPosX = pVehicle->fX;
+	fix16_t fNewPosY = pVehicle->fY;
+	// Relative
+	fNewPosX += fix16_mul(ccos(pVehicle->ubBodyAngle), pVehicle->fSpeed) - fix16_mul(csin(pVehicle->ubBodyAngle), pVehicle->fSpeed2);
+	fNewPosY += fix16_mul(csin(pVehicle->ubBodyAngle), pVehicle->fSpeed) + fix16_mul(ccos(pVehicle->ubBodyAngle), pVehicle->fSpeed2);
+
+	// Body rotation: left/right
+	pVehicle->ubBodyAngle += ANGLE_360 + getDeltaAngleDirection(
+		pVehicle->ubBodyAngle, pSteerRequest->ubDestAngle, 1
+	);
+	if(pVehicle->ubBodyAngle >= ANGLE_360) {
+		pVehicle->ubBodyAngle -= ANGLE_360;
+	}
+	bobNewSetBitMapOffset(
+		&pVehicle->sBob, angleToFrame(pVehicle->ubBodyAngle) * VEHICLE_BODY_HEIGHT
+	);
+
+	// Exact center pos
+	pVehicle->fX = fNewPosX;
+	pVehicle->fY = fNewPosY;
+	// Rounded center pos
+	pVehicle->uwX = fix16_to_int(fNewPosX);
+	pVehicle->uwY = fix16_to_int(fNewPosY);
+	// Top-left draw pos
+	pVehicle->sBob.sPos.sUwCoord.uwX = pVehicle->uwX - VEHICLE_BODY_WIDTH/2;
+	pVehicle->sBob.sPos.sUwCoord.uwY = pVehicle->uwY - VEHICLE_BODY_HEIGHT/2;
+
+	// Rotor
+	pVehicle->ubAuxAngle += 6;
+	if(pVehicle->ubAuxAngle >= ANGLE_360) {
+		pVehicle->ubAuxAngle -= ANGLE_360;
+	}
+	bobNewSetBitMapOffset(
+		&pVehicle->sAuxBob, angleToFrame(pVehicle->ubAuxAngle) * VEHICLE_BODY_HEIGHT
 	);
 	pVehicle->sAuxBob.sPos.ulYX = pVehicle->sBob.sPos.ulYX;
 

@@ -6,7 +6,6 @@
 #include <ace/utils/extview.h>
 #include <ace/utils/palette.h>
 #include <ace/managers/system.h>
-#include "config.h"
 #include "cursor.h"
 #include "map.h"
 #include "gamestates/menu/button.h"

@@ -38,6 +38,9 @@ ULONG g_ulGameFrame;
 static tFont *s_pSmallFont;
 
 UBYTE g_isLocalBot;
+UBYTE g_ubFps;
+UBYTE s_ubFpsCounter;
+UBYTE s_ubFpsCalcTimeout;
 
 void displayPrepareLimbo(void) {
 	mouseSetBounds(MOUSE_PORT_1, 0,0, 320, 255);
@@ -47,6 +50,22 @@ void displayPrepareLimbo(void) {
 void displayPrepareDriving(void) {
 	mouseSetBounds(MOUSE_PORT_1, 0, 0, 320, 191);
 	hudChangeState(HUD_STATE_DRIVING);
+}
+
+FN_HOTSPOT
+static void INTERRUPT gameVblankServer(
+  UNUSED_ARG REGARG(volatile tCustom *pCustom, "a0"),
+  UNUSED_ARG REGARG(volatile void *pData, "a1")
+) {
+	++s_ubFpsCalcTimeout;
+	if(s_ubFpsCalcTimeout == 50) {
+		s_ubFpsCalcTimeout = 0;
+		g_ubFps = s_ubFpsCounter;
+		s_ubFpsCounter = 0;
+	}
+	if(!g_isChatting) {
+		steerRequestCapture();
+	}
 }
 
 void gsGameCreate(void) {
@@ -121,6 +140,10 @@ void gsGameCreate(void) {
 
 	// Initial values
 	g_ulGameFrame = 0;
+	s_ubFpsCounter = 0;
+	g_ubFps = 0;
+	s_ubFpsCalcTimeout = 0;
+	steerRequestInit();
 
 	// AI
 	playerListInit(ubPlayersMax);
@@ -134,10 +157,11 @@ void gsGameCreate(void) {
 	else {
 		g_pLocalPlayer = playerAdd("player", TEAM_BLUE);
 	}
-	botAdd("enemy", TEAM_RED);
+	// botAdd("enemy", TEAM_RED);
 	displayPrepareLimbo();
 
 	blitWait();
+	systemSetInt(INTB_VERTB, gameVblankServer, 0);
 
 	viewLoad(g_pWorldView);
 	logBlockEnd("gsGameCreate()");
@@ -172,10 +196,15 @@ void gsGameLoop(void) {
 		gameChangeState(menuCreate, menuLoop, menuDestroy);
 		return;
 	}
-	gameDebugKeys();
-	// Steering-irrelevant player input
-	if(keyUse(KEY_T)) {
-		consoleChatBegin();
+	if(!g_isChatting) {
+		gameDebugKeys();
+		// Steering-irrelevant player input
+		if(keyUse(KEY_T)) {
+			consoleChatBegin();
+		}
+		else if(keyUse(KEY_F1)) {
+			hudToggleFps();
+		}
 	}
 	if(keyUse(KEY_TAB)) {
 		s_isScoreShown = 1;
@@ -193,23 +222,29 @@ void gsGameLoop(void) {
 
 	// Undraw bobs so that something goes on during data recv
 	dataRecv(); // Receives positions of other players from server
-	spawnSim();
-	controlSim();
-
-	playerLocalProcessInput(); // Steer requests, chat, limbo
-	botProcess();
 	dataSend(); // Send input requests to server
+	while(steerRequestProcessedCount() != steerRequestReadCount()) {
+		spawnSim();
+		controlSim();
 
-	// Undraw bobs, draw pending tiles
-	bobNewBegin();
-	controlRedrawPoints();
-	worldMapUpdateTiles();
+		playerLocalProcessInput(); // Steer requests, chat, limbo
+		botProcess();
 
-	// sim & draw
-	playerSim(); // Players & vehicles states
-	turretSim(); // Turrets: targeting, rotation & projectile spawn
-	projectileSim(); // Projectiles: new positions, damage -> explosions
-	explosionsProcess();
+		// Undraw bobs, draw pending tiles
+		bobNewBegin();
+		controlRedrawPoints();
+		worldMapUpdateTiles();
+
+		// sim & draw
+		playerSim(); // Players & vehicles states
+		turretSim(); // Turrets: targeting, rotation & projectile spawn
+		projectileSim(); // Projectiles: new positions, damage -> explosions
+		explosionsProcess();
+		steerRequestMoveToNext();
+	}
+	if(!steerRequestReadCount()) {
+		bobNewBegin();
+	}
 	bobNewPushingDone();
 
 	if(!g_pTeams[TEAM_RED].uwTicketsLeft || !g_pTeams[TEAM_BLUE].uwTicketsLeft) {
@@ -217,11 +252,11 @@ void gsGameLoop(void) {
 		gameChangeLoop(gameSummaryLoop);
 	}
 
-  cursorUpdate();
+	cursorUpdate();
 	if(g_pLocalPlayer->ubState != PLAYER_STATE_LIMBO) {
 		cameraCenterAt(
 			g_pWorldCamera,
-			g_pLocalPlayer->sVehicle.uwX & 0xFFFE, g_pLocalPlayer->sVehicle.uwY
+			g_pLocalPlayer->sVehicle.uwX, g_pLocalPlayer->sVehicle.uwY
 		);
 	}
 	else {
@@ -234,13 +269,13 @@ void gsGameLoop(void) {
 		cameraMoveBy(g_pWorldCamera, wDx, wDy);
 	}
 
+	steerRequestSwap();
 	bobNewEnd(); // SHOULD BE SOMEWHERE HERE
 	worldMapSwapBuffers();
 
 	// Start refreshing gfx at hud
+	++s_ubFpsCounter;
 	vPortWaitForEnd(s_pWorldMainVPort);
-
-	// This should be done on vblank interrupt
 	if(!s_isScoreShown) {
 		viewProcessManagers(g_pWorldView);
 		copProcessBlocks();
@@ -253,6 +288,8 @@ void gsGameLoop(void) {
 void gsGameDestroy(void) {
 	systemUse();
 	logBlockBegin("gsGameDestroy()");
+
+	systemSetInt(INTB_VERTB, 0, 0);
 
 	projectileListDestroy();
 

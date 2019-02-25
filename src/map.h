@@ -45,7 +45,7 @@ typedef struct _tMap {
 	tMapTile pData[MAP_MAX_SIZE][MAP_MAX_SIZE];
 } tMap;
 
-void mapInit(char *szPath);
+void mapInit(char *szFileName);
 
 void mapSetLogic(UBYTE ubX, UBYTE ubY, UBYTE ubLogic);
 

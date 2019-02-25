@@ -1,5 +1,6 @@
 #include "gamestates/menu/maplist.h"
 #include <string.h>
+#include <stdlib.h>
 #include <ace/types.h>
 #include <ace/managers/memory.h>
 #include <ace/managers/key.h>
@@ -28,6 +29,10 @@ typedef struct _tMapList {
 
 static tMapList s_sMapList;
 static tListCtl *s_pListCtl;
+
+static int mapListCompareCb(const void *p1, const void *p2) {
+	return memcmp(p1, p2, sizeof(tMapListEntry));
+}
 
 static void mapListPrepareList(void) {
 	systemUse();
@@ -62,6 +67,8 @@ static void mapListPrepareList(void) {
 	}
 	dirClose(pDir);
 	systemUnuse();
+
+	qsort(s_sMapList.pMaps, s_sMapList.uwMapCount, sizeof(tMapListEntry), mapListCompareCb);
 }
 
 static void mapListSelect(UWORD uwIdx) {
@@ -142,7 +149,7 @@ void mapListCreate(void) {
 		mapListOnMapChange
 	);
 	for(UWORD i = 0; i != s_sMapList.uwMapCount; ++i) {
-		s_sMapList.pMaps[i][strlen(s_sMapList.pMaps[i])-5] = '\0';
+		s_sMapList.pMaps[i][strlen(s_sMapList.pMaps[i]) - strlen(".json")] = '\0';
 		listCtlAddEntry(s_pListCtl, s_sMapList.pMaps[i]);
 		s_sMapList.pMaps[i][strlen(s_sMapList.pMaps[i])] = '.';
 	}

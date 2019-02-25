@@ -3,6 +3,7 @@
 
 #include <ace/managers/viewport/simplebuffer.h>
 #include <gamestates/game/bob_new.h>
+#include <gamestates/game/steer_request.h>
 
 #define WORLD_BPP 4
 
@@ -37,6 +38,7 @@ extern tCameraManager *g_pWorldCamera;
 
 extern ULONG g_ulGameFrame;
 extern UBYTE g_isLocalBot;
+extern UBYTE g_ubFps;
 
 void gsGameCreate(void);
 void gsGameLoop(void);

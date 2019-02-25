@@ -2,31 +2,31 @@
 #include <stdlib.h>
 #include <ace/managers/log.h>
 #include <ace/managers/memory.h>
+#include <ace/managers/system.h>
 #include <ace/utils/file.h>
 
 tJson *jsonCreate(const char *szFilePath) {
+	systemUse();
 	logBlockBegin("jsonCreate(szFilePath: %s)", szFilePath);
 	tJson *pJson = memAllocFast(sizeof(tJson));
 
 	// Read whole file to string
+	LONG lFileSize = fileGetSize(szFilePath);
+	pJson->szData = memAllocFast(lFileSize+1);
 	tFile *pFile = fileOpen(szFilePath, "rb");
 	if(!pFile) {
 		logWrite("ERR: File doesn't exist: '%s'\n", szFilePath);
 	}
-	fileSeek(pFile, 0, FILE_SEEK_END);
-	ULONG ulFileSize = fileGetPos(pFile);
-	fileSeek(pFile, 0, FILE_SEEK_SET);
-
-	pJson->szData = memAllocFast(ulFileSize+1);
-	fileRead(pFile, pJson->szData, ulFileSize);
-	pJson->szData[ulFileSize] = '\0';
+	fileRead(pFile, pJson->szData, lFileSize);
+	pJson->szData[lFileSize] = '\0';
 	fileClose(pFile);
+	systemUnuse();
 
 	jsmn_parser sJsonParser;
 	jsmn_init(&sJsonParser);
 
 	// Count tokens & alloc
-	pJson->fwTokenCount = jsmn_parse(&sJsonParser, pJson->szData, ulFileSize+1, 0, 0);
+	pJson->fwTokenCount = jsmn_parse(&sJsonParser, pJson->szData, lFileSize+1, 0, 0);
 	if(pJson->fwTokenCount < 0) {
 		logWrite(
 			"ERR: JSON during token counting: %"PRI_FWORD"\n", pJson->fwTokenCount
@@ -39,7 +39,7 @@ tJson *jsonCreate(const char *szFilePath) {
 	// Read tokens
 	jsmn_init(&sJsonParser);
 	FWORD fwResult = jsmn_parse(
-		&sJsonParser, pJson->szData, ulFileSize+1, pJson->pTokens, pJson->fwTokenCount
+		&sJsonParser, pJson->szData, lFileSize+1, pJson->pTokens, pJson->fwTokenCount
 	);
 	if(fwResult < 0) {
 		logWrite("ERR: JSON during tokenize: %"PRI_FWORD"\n", fwResult);
